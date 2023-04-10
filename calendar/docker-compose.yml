@@ -1,0 +1,51 @@
+---
+version: "3"
+
+services:
+
+  backend:
+    build: ./backend
+    environment:
+      BACKEND_HOST: ${BACKEND_HOST}
+      BACKEND_PORT: ${BACKEND_PORT}
+      MONGO_HOST: mongo
+      MONGO_DB: Event
+    entrypoint: bash -c 'npm run build && npm run start'
+    ports:
+      - 127.0.0.1:${BACKEND_PORT}:${BACKEND_PORT}
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - mongo
+
+  frontend:
+    build: ./frontend/
+    environment:
+      REACT_APP_BACKEND_URL: 'http://localhost:${BACKEND_PORT}'
+    entrypoint: bash -c 'npm run build && npm run start'
+    ports:
+      - 127.0.0.1:${FRONTEND_PORT}:${FRONTEND_PORT}
+    volumes:
+      - ./frontend:/app
+    # NOTE: build & start commands are so slow, no need to wait for backend container first,
+    # running it independently doesn't cause a problem. Uncomment below if needed.
+    # depends_on:
+    #   - backend
+
+  mongo:
+    image: mongo
+    restart: always
+    ports:
+      - 127.0.0.1:27017:27017
+    volumes:
+      - ~/mongo_data:/data/db
+    depends_on:
+      - mongo-ui
+
+  mongo-ui:
+    image: mongo-express
+    restart: always
+    environment:
+      ME_CONFIG_MONGODB_ENABLE_ADMIN: "true"
+    ports:
+      - 127.0.0.1:8081:8081
